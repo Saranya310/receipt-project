@@ -47,3 +47,13 @@ jobs:
 
       - name: List receipt candidates after processing
         run: uv run --frozen python scripts/list_onedrive_receipts.py
+
+
+      - name: Verify Microsoft authentication
+        run: |
+          uv run --frozen python -c "
+          from receipt_project.onedrive import get_access_token
+          token = get_access_token()
+          print('Access token acquired:', bool(token))
+          "
+

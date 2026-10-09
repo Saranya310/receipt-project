@@ -263,10 +263,29 @@ Rules:
     price adjustment, or other non-merchandise adjustment must NOT be
     extracted as a merchandise item.
 
+    A receipt line shaped like:
+
+        REFERENCE_CODE / ITEM_CODE AMOUNT
+
+    is an adjustment/reference line rather than a merchandise line unless
+    the receipt clearly identifies it as merchandise.
+
 38. When a refund adjustment references an item number, put it in
     discounts with:
     - amount as a positive absolute value
     - related_item_code populated when identifiable
+
+    If a nearby quantity-helper line such as:
+
+        N @ UNIT_PRICE
+
+    satisfies:
+
+        N * UNIT_PRICE = adjustment amount
+
+    treat that helper as supporting evidence for the adjustment amount.
+    Do not create a separate merchandise item from the helper or from the
+    adjustment reference line.
 
 39. Example refund:
 
@@ -324,12 +343,18 @@ Rules:
 
         N @ UNIT_PRICE
 
-    search the nearby merchandise lines for the one whose printed line
-    total equals:
+    calculate:
 
         N * UNIT_PRICE
 
-    within normal currency rounding.
+    Then search the nearby receipt lines for the printed amount that matches
+    that calculated value within normal currency rounding.
+
+    If a nearby merchandise line has that matching printed total, attach the
+    quantity helper to that merchandise line.
+
+    Do not attach the helper to an adjacent merchandise line whose printed
+    total does not equal N * UNIT_PRICE.
 
     Exact arithmetic matching overrides positional assumptions.
 

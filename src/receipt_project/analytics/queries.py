@@ -529,6 +529,78 @@ def search_items(
     ]
 
 
+def get_purchased_items(
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[dict]:
+    """
+    Return positive item rows from purchase transactions.
+
+    Returns/refunds and non-positive item quantities are
+    intentionally excluded because this helper represents
+    items actually purchased during the selected period.
+    """
+    with psycopg.connect(
+        get_database_url()
+    ) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    r.id,
+                    r.purchase_date,
+                    r.store_name,
+                    ri.store_item_code,
+                    ri.raw_description,
+                    ri.quantity,
+                    ri.unit_price,
+                    ri.total_price
+                FROM receipt_items ri
+                JOIN receipts r
+                    ON r.id = ri.receipt_id
+                WHERE r.total > 0
+                  AND ri.quantity > 0
+                  AND (
+                    %s::date IS NULL
+                    OR r.purchase_date >= %s::date
+                  )
+                  AND (
+                    %s::date IS NULL
+                    OR r.purchase_date <= %s::date
+                  )
+                ORDER BY
+                    r.purchase_date DESC NULLS LAST,
+                    r.id DESC,
+                    ri.id
+                """,
+                (
+                    start_date,
+                    start_date,
+                    end_date,
+                    end_date,
+                ),
+            )
+
+            rows = cursor.fetchall()
+
+    return [
+        {
+            "receipt_id": row[0],
+            "purchase_date": row[1],
+            "store_name": normalize_store_name(
+                row[2]
+            ),
+            "store_item_code": row[3],
+            "raw_description": row[4],
+            "quantity": row[5],
+            "unit_price": row[6],
+            "total_price": row[7],
+        }
+        for row in rows
+    ]
+
+
+
 def get_receipt_detail(receipt_id: int) -> dict | None:
     with psycopg.connect(get_database_url()) as connection:
         with connection.cursor() as cursor:
